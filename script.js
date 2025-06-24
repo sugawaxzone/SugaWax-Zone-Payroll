@@ -1,6 +1,5 @@
 // script.js
 
-// Array to store payroll entries
 const payrollData = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    // Get input values
+    // Get form inputs
     const name = document.getElementById("name").value;
     const hours = parseFloat(document.getElementById("hours").value);
     const wage = parseFloat(document.getElementById("wage").value);
@@ -19,21 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const commission = parseFloat(document.getElementById("commission").value) || 0;
     const period = document.getElementById("period").value;
 
-    // --- Earnings ---
+    // Gross Pay
     const basePay = hours * wage;
     const grossPay = basePay + tips + commission;
 
-    // --- CPP Calculation (2025) ---
-    const cppExempt = 3500 / 26; // basic exemption for bi-weekly pay
-    const cppMaxEarnings = 68500 / 26;
-    const pensionableEarnings = Math.max(0, Math.min(grossPay - cppExempt, cppMaxEarnings));
-    const cpp = pensionableEarnings * 0.0595;
+    // --- CPP ---
+    const cppExempt = 3500 / 26;
+    const cppMax = 68500 / 26;
+    const cppEligible = Math.max(0, Math.min(grossPay - cppExempt, cppMax));
+    const cpp = cppEligible * 0.0595;
 
-    // --- EI Calculation (2025) ---
-    const eiMaxEarnings = 63200 / 26;
-    const ei = Math.min(grossPay, eiMaxEarnings) * 0.0166;
+    // --- EI ---
+    const eiMax = 63200 / 26;
+    const ei = Math.min(grossPay, eiMax) * 0.0166;
 
-    // --- Federal Tax (2025) ---
+    // --- Federal Tax ---
     let fedTax = 0;
     if (grossPay <= 55867 / 26) {
       fedTax = grossPay * 0.15;
@@ -46,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (grossPay - (111733 / 26)) * 0.26;
     }
 
-    // --- Ontario Tax (2025) ---
+    // --- Ontario Tax ---
     let ontTax = 0;
     if (grossPay <= 51446 / 26) {
       ontTax = grossPay * 0.0505;
@@ -59,31 +58,22 @@ document.addEventListener("DOMContentLoaded", () => {
         (grossPay - (102894 / 26)) * 0.1116;
     }
 
-    // --- Final Deductions & Net Pay ---
+    // Total Deductions and Net Pay
     const totalDeductions = cpp + ei + fedTax + ontTax;
     const netPay = grossPay - totalDeductions;
 
-    // --- Store employee payroll entry ---
+    // Store entry
     const employee = {
-      name,
-      hours,
-      wage,
-      tips,
-      commission,
-      basePay,
-      grossPay,
-      cpp,
-      ei,
-      fedTax,
-      ontTax,
-      totalDeductions,
-      netPay,
-      period,
+      name, period, hours, wage, tips, commission,
+      basePay, grossPay, cpp, ei, fedTax, ontTax,
+      totalDeductions, netPay,
     };
     payrollData.push(employee);
 
-    // --- Generate pay stub ---
+    // Generate stub
     const stubHTML = `
+      <p><strong>Company:</strong> SugaWax Zone</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Pay Period:</strong> ${period}</p>
       <p><strong>Hours Worked:</strong> ${hours}</p>
@@ -103,8 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     paystubContainer.innerHTML = stubHTML;
     resultSection.classList.remove("hidden");
-
-    // Optional: Clear form
     form.reset();
   });
 });
