@@ -1,127 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SugaWax Zone Payroll</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Smooth input focus */
-    input:focus, select:focus {
-      outline: none;
-      box-shadow: 0 0 5px rgba(139,92,246,0.6);
-      transition: box-shadow 0.3s ease-in-out;
-    }
-    /* Button hover */
-    button:hover {
-      background-color: #7c3aed;
-      transition: background-color 0.3s ease-in-out;
-    }
-  </style>
-</head>
-<body class="bg-gradient-to-br from-purple-100 to-indigo-100 min-h-screen flex flex-col items-center p-6 font-sans">
-  <h1 class="text-4xl font-extrabold mb-6 text-violet-800">SugaWax Zone Payroll</h1>
+<!-- Payroll Form -->
+<section class="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
+  <h2 class="text-xl font-semibold mb-4 text-violet-700">Process Payroll</h2>
+  <form id="payroll-form" class="space-y-4">
+    <select
+      id="employeeSelect"
+      class="w-full p-2 border border-violet-300 rounded"
+      required
+    >
+      <option value="">Select Employee</option>
+    </select>
 
-  <!-- Add Employee Form -->
-  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
-    <h2 class="text-xl font-semibold mb-4 text-violet-700">Add Employee</h2>
-    <form id="add-employee-form" class="space-y-4">
-      <input
-        id="newEmployeeName"
-        type="text"
-        placeholder="Employee Name"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      />
-      <input
-        id="newEmployeeWage"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Hourly Wage (e.g. 17.20)"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      />
-      <button
-        type="submit"
-        class="w-full bg-violet-600 text-white py-2 rounded font-semibold cursor-pointer"
-      >
-        Add Employee
-      </button>
-    </form>
-  </section>
+    <input
+      id="payDate"
+      type="date"
+      class="w-full p-2 border border-violet-300 rounded"
+      required
+    />
 
-  <!-- Payroll Form -->
-  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
-    <h2 class="text-xl font-semibold mb-4 text-violet-700">Process Payroll</h2>
-    <form id="payroll-form" class="space-y-4">
-      <select
-        id="employeeSelect"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      >
-        <option value="">Select Employee</option>
-      </select>
+    <input
+      id="period"
+      type="text"
+      placeholder="Pay Period (e.g. June 01 - June 14)"
+      class="w-full p-2 border border-violet-300 rounded"
+      required
+    />
 
-      <input
-        id="payDate"
-        type="date"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      />
+    <input
+      id="hours"
+      type="number"
+      step="0.01"
+      min="0"
+      placeholder="Hours Worked"
+      class="w-full p-2 border border-violet-300 rounded"
+      required
+    />
+    <input
+      id="tips"
+      type="number"
+      step="0.01"
+      min="0"
+      placeholder="Tips (optional)"
+      class="w-full p-2 border border-violet-300 rounded"
+    />
+    <input
+      id="commission"
+      type="number"
+      step="0.01"
+      min="0"
+      placeholder="Commission (optional)"
+      class="w-full p-2 border border-violet-300 rounded"
+    />
 
-      <input
-        id="period"
-        type="text"
-        placeholder="Pay Period (e.g. June 01 - June 14)"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      />
-
-      <input
-        id="hours"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Hours Worked"
-        class="w-full p-2 border border-violet-300 rounded"
-        required
-      />
-      <input
-        id="tips"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Tips (optional)"
-        class="w-full p-2 border border-violet-300 rounded"
-      />
-      <input
-        id="commission"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Commission (optional)"
-        class="w-full p-2 border border-violet-300 rounded"
-      />
-
-      <button
-        type="submit"
-        class="w-full bg-violet-600 text-white py-2 rounded font-semibold cursor-pointer"
-      >
-        Calculate Payroll
-      </button>
-    </form>
-  </section>
-
-  <!-- Result / Pay Stub -->
-  <section
-    id="result"
-    class="hidden bg-white p-6 rounded-lg shadow-md w-full max-w-lg mt-8 border border-violet-300"
-  >
-    <h2 class="text-xl font-semibold mb-4 text-violet-700">Pay Stub</h2>
-    <div id="paystub" class="space-y-1 text-gray-700"></div>
-  </section>
-
-  <script src="script.js"></script>
-</body>
-</html>
+    <button
+      type="submit"
+      class="w-full bg-violet-600 text-white py-2 rounded font-semibold cursor-pointer"
+    >
+      Calculate Payroll
+    </button>
+  </form>
+</section>
