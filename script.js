@@ -1,4 +1,4 @@
-// script.js
+// Updated script.js with detailed calculation and comments
 
 const CRA_DATA = {
   2025: {
@@ -21,15 +21,14 @@ const CRA_DATA = {
   },
 };
 
-// Calculate tax from brackets
 function calculateTax(income, brackets) {
   let tax = 0;
-  let previousLimit = 0;
+  let prevLimit = 0;
   for (const bracket of brackets) {
-    if (income <= previousLimit) break;
-    const taxableIncome = Math.min(income, bracket.limit) - previousLimit;
-    tax += taxableIncome * bracket.rate;
-    previousLimit = bracket.limit;
+    if (income <= prevLimit) break;
+    const taxable = Math.min(income, bracket.limit) - prevLimit;
+    tax += taxable * bracket.rate;
+    prevLimit = bracket.limit;
   }
   return tax;
 }
@@ -52,7 +51,6 @@ function populateEmployeeDropdown() {
     option.textContent = emp.name;
     select.appendChild(option);
   });
-  // Reset selection after repopulating
   select.value = "";
 }
 
@@ -99,13 +97,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const cra = CRA_DATA[year] || CRA_DATA[2025];
 
+    // Initialize YTD records if missing or new year
     if (!emp.ytds) emp.ytds = {};
     if (!emp.ytds[year]) {
       emp.ytds[year] = { ytdGross: 0, ytdCpp: 0, ytdEi: 0 };
     }
-
     const ytd = emp.ytds[year];
 
+    // Parse inputs carefully
     const hours = parseFloat(document.getElementById("hours").value);
     const tips = parseFloat(document.getElementById("tips").value) || 0;
     const commission = parseFloat(document.getElementById("commission").value) || 0;
@@ -118,38 +117,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const basePay = hours * emp.wage;
     const grossPay = basePay + tips + commission;
+
+    // Annual gross including current period
     const annualGross = ytd.ytdGross + grossPay;
 
-    const fedTax = Math.max(
-      0,
-      (calculateTax(annualGross, cra.federalTaxBrackets) - calculateTax(ytd.ytdGross, cra.federalTaxBrackets)) / cra.payPeriodsPerYear
-    );
-    const ontTax = Math.max(
-      0,
-      (calculateTax(annualGross, cra.ontarioTaxBrackets) - calculateTax(ytd.ytdGross, cra.ontarioTaxBrackets)) / cra.payPeriodsPerYear
-    );
+    // Calculate annual federal and provincial taxes on YTD + current gross
+    const totalFedTax = calculateTax(annualGross, cra.federalTaxBrackets);
+    const totalOntTax = calculateTax(annualGross, cra.ontarioTaxBrackets);
 
-    const totalPensionable = Math.max(0, annualGross - cra.CPP_BASIC_EXEMPTION);
-    const ytdPensionable = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
-    let cpp = Math.min(grossPay, totalPensionable - ytdPensionable) * cra.CPP_RATE;
+    // Subtract previous YTD tax to get tax for current pay period
+    const prevFedTax = calculateTax(ytd.ytdGross, cra.federalTaxBrackets);
+    const prevOntTax = calculateTax(ytd.ytdGross, cra.ontarioTaxBrackets);
+
+    let fedTax = (totalFedTax - prevFedTax) / cra.payPeriodsPerYear;
+    let ontTax = (totalOntTax - prevOntTax) / cra.payPeriodsPerYear;
+
+    // Fix negative tax (can happen at year start)
+    fedTax = Math.max(0, fedTax);
+    ontTax = Math.max(0, ontTax);
+
+    // CPP calculations:
+    // Only earnings above basic exemption count toward CPP
+    const pensionableGross = Math.max(0, grossPay - cra.CPP_BASIC_EXEMPTION / cra.payPeriodsPerYear);
+    const totalPensionableYTD = Math.max(0, annualGross - cra.CPP_BASIC_EXEMPTION);
+    const pensionableYTDPrev = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
+
+    // CPP for this pay period
+    let cpp = pensionableGross * cra.CPP_RATE;
+
+    // Ensure we don't exceed max CPP contributions
     const maxCpp = (cra.CPP_ANNUAL_MAX - cra.CPP_BASIC_EXEMPTION) * cra.CPP_RATE;
-    if (ytd.ytdCpp + cpp > maxCpp) cpp = maxCpp - ytd.ytdCpp;
-    if (cpp < 0) cpp = 0;
+    if (ytd.ytdCpp + cpp > maxCpp) {
+      cpp = Math.max(0, maxCpp - ytd.ytdCpp);
+    }
 
-    let eiBase = Math.max(0, cra.EI_ANNUAL_MAX - ytd.ytdGross);
-    let ei = Math.min(grossPay, eiBase) * cra.EI_RATE;
+    // EI calculations:
+    // EI applies to gross pay, capped annually
+    const eiBaseRemaining = Math.max(0, cra.EI_ANNUAL_MAX - ytd.ytdGross);
+    const eiGross = Math.min(grossPay, eiBaseRemaining);
+    let ei = eiGross * cra.EI_RATE;
+
     const maxEi = cra.EI_ANNUAL_MAX * cra.EI_RATE;
-    if (ytd.ytdEi + ei > maxEi) ei = maxEi - ytd.ytdEi;
-    if (ei < 0) ei = 0;
+    if (ytd.ytdEi + ei > maxEi) {
+      ei = Math.max(0, maxEi - ytd.ytdEi);
+    }
 
+    // Total deductions and net pay
     const totalDeductions = fedTax + ontTax + cpp + ei;
     const netPay = grossPay - totalDeductions;
 
+    // Update employee YTD data for this year
     ytd.ytdGross += grossPay;
     ytd.ytdCpp += cpp;
     ytd.ytdEi += ei;
+
     saveEmployees(employees);
 
+    // Display pay stub with clear formatting
     document.getElementById("result").classList.remove("hidden");
     document.getElementById("paystub").innerHTML = `
       <p><strong>Company:</strong> SugaWax Zone</p>
