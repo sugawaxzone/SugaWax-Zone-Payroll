@@ -11,26 +11,10 @@
       @apply border border-gray-300 rounded px-3 py-2 w-full;
     }
     @media print {
-      body {
-        background: white;
-      }
-      .print\:hidden {
-        display: none !important;
-      }
-      #payroll-form, h1 {
-        display: none;
-      }
-      #result {
-        margin: 0;
-        padding: 0;
-        box-shadow: none;
-      }
-      #paystub {
-        border: 1px solid #ccc;
-        padding: 20px;
-        max-width: 600px;
-        margin: auto;
-      }
+      .print\:hidden { display: none !important; }
+      body { background: white; }
+      #payroll-form, #add-employee-form, h1 { display: none; }
+      #paystub { border: 1px solid #ccc; padding: 20px; max-width: 600px; margin: auto; }
     }
   </style>
 </head>
@@ -38,30 +22,34 @@
   <div class="max-w-4xl mx-auto">
     <h1 class="text-3xl font-bold text-center mb-6">SugaWax Zone Payroll System</h1>
 
+    <!-- Add Employee Form -->
+    <form id="add-employee-form" class="bg-white shadow-md rounded p-6 space-y-4 mb-6">
+      <h2 class="text-xl font-semibold">Add New Employee</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <input type="text" placeholder="Employee Name" id="newEmployeeName" class="input" required />
+        <input type="number" placeholder="Hourly Wage" id="newEmployeeWage" class="input" required />
+      </div>
+      <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Add Employee</button>
+    </form>
+
+    <!-- Payroll Form -->
     <form id="payroll-form" class="bg-white shadow-md rounded p-6 space-y-4">
       <div class="grid grid-cols-2 gap-4">
-        <input type="text" placeholder="Employee Name" id="name" class="input" required />
+        <select id="employeeSelect" class="input" required>
+          <option value="">Select Employee</option>
+        </select>
         <input type="number" placeholder="Hours Worked" id="hours" class="input" required />
-        <input type="number" placeholder="Hourly Wage" id="wage" class="input" required />
         <input type="number" placeholder="Tips" id="tips" class="input" />
         <input type="number" placeholder="Commission" id="commission" class="input" />
         <input type="text" placeholder="Pay Period (e.g. June 1–15)" id="period" class="input" required />
-
-        <!-- New YTD Inputs -->
-        <input type="number" placeholder="YTD Gross Earnings" id="ytdGross" class="input" value="0" required />
-        <input type="number" placeholder="YTD CPP Deducted" id="ytdCpp" class="input" value="0" required />
-        <input type="number" placeholder="YTD EI Deducted" id="ytdEi" class="input" value="0" required />
       </div>
-
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Payroll</button>
     </form>
 
     <div id="result" class="mt-8 hidden">
       <h2 class="text-2xl font-semibold mb-4">Pay Stub</h2>
       <div id="paystub" class="bg-white p-6 shadow rounded space-y-2"></div>
-      <button onclick="window.print()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 print:hidden">
-        Print Pay Stub
-      </button>
+      <button onclick="window.print()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 print:hidden">Print Pay Stub</button>
     </div>
   </div>
 </body>
