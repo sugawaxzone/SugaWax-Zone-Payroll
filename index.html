@@ -1,56 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SugaWax Zone Payroll</title>
+  <title>SugaWax Zone Payroll System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="script.js" defer></script>
   <style>
-    .input {
-      @apply border border-gray-300 rounded px-3 py-2 w-full;
+    /* Custom scrollbar for better UX */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f3f4f6; /* Tailwind gray-100 */
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #8b5cf6; /* Tailwind violet-500 */
+      border-radius: 10px;
+      border: 3px solid #f3f4f6;
     }
     @media print {
-      .print\:hidden { display: none !important; }
-      body { background: white; }
-      #payroll-form, #add-employee-form, h1 { display: none; }
-      #paystub { border: 1px solid #ccc; padding: 20px; max-width: 600px; margin: auto; }
+      body * {
+        visibility: hidden;
+      }
+      #paystub, #paystub * {
+        visibility: visible;
+      }
+      #paystub {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+        background: white;
+        border: 1px solid #d1d5db; /* Tailwind gray-300 */
+      }
+      #add-employee-form, #payroll-form, button {
+        display: none;
+      }
     }
   </style>
 </head>
-<body class="bg-gray-50 p-6">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold text-center mb-6">SugaWax Zone Payroll System</h1>
+<body class="bg-gradient-to-br from-purple-50 to-purple-100 min-h-screen flex items-center justify-center p-4">
+  <main class="max-w-4xl w-full bg-white rounded-xl shadow-lg p-8 space-y-8">
+    <h1 class="text-4xl font-extrabold text-violet-700 text-center tracking-tight drop-shadow-md">
+      SugaWax Zone Payroll System
+    </h1>
 
     <!-- Add Employee Form -->
-    <form id="add-employee-form" class="bg-white shadow-md rounded p-6 space-y-4 mb-6">
-      <h2 class="text-xl font-semibold">Add New Employee</h2>
-      <div class="grid grid-cols-2 gap-4">
-        <input type="text" placeholder="Employee Name" id="newEmployeeName" class="input" required />
-        <input type="number" placeholder="Hourly Wage" id="newEmployeeWage" class="input" required />
-      </div>
-      <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Add Employee</button>
-    </form>
+    <section class="bg-violet-50 border border-violet-300 rounded-lg p-6 shadow-md">
+      <h2 class="text-2xl font-semibold mb-4 text-violet-700">Add New Employee</h2>
+      <form id="add-employee-form" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Employee Name</span>
+          <input
+            type="text"
+            id="newEmployeeName"
+            class="input input-bordered w-full border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. Jane Doe"
+            required
+          />
+        </label>
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Hourly Wage ($)</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            id="newEmployeeWage"
+            class="input input-bordered w-full border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. 17.20"
+            required
+          />
+        </label>
+        <button
+          type="submit"
+          class="bg-violet-600 text-white font-semibold py-2 rounded-md hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 transition"
+        >
+          Add Employee
+        </button>
+      </form>
+    </section>
 
     <!-- Payroll Form -->
-    <form id="payroll-form" class="bg-white shadow-md rounded p-6 space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <select id="employeeSelect" class="input" required>
-          <option value="">Select Employee</option>
-        </select>
-        <input type="number" placeholder="Hours Worked" id="hours" class="input" required />
-        <input type="number" placeholder="Tips" id="tips" class="input" />
-        <input type="number" placeholder="Commission" id="commission" class="input" />
-        <input type="text" placeholder="Pay Period (e.g. June 1–15)" id="period" class="input" required />
-      </div>
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Payroll</button>
-    </form>
+    <section class="bg-violet-50 border border-violet-300 rounded-lg p-6 shadow-md">
+      <h2 class="text-2xl font-semibold mb-4 text-violet-700">Calculate Payroll</h2>
+      <form id="payroll-form" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Select Employee</span>
+          <select
+            id="employeeSelect"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            required
+          >
+            <option value="">Select Employee</option>
+          </select>
+        </label>
 
-    <div id="result" class="mt-8 hidden">
-      <h2 class="text-2xl font-semibold mb-4">Pay Stub</h2>
-      <div id="paystub" class="bg-white p-6 shadow rounded space-y-2"></div>
-      <button onclick="window.print()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 print:hidden">Print Pay Stub</button>
-    </div>
-  </div>
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Pay Date</span>
+          <input
+            type="date"
+            id="payDate"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            required
+          />
+        </label>
+
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Hours Worked</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            id="hours"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. 40"
+            required
+          />
+        </label>
+
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Tips ($)</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            id="tips"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. 50"
+          />
+        </label>
+
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Commission ($)</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            id="commission"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. 100"
+          />
+        </label>
+
+        <label class="flex flex-col">
+          <span class="font-medium text-violet-600 mb-1">Pay Period</span>
+          <input
+            type="text"
+            id="period"
+            class="border border-violet-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            placeholder="e.g. June 1–15"
+            required
+          />
+        </label>
+
+        <button
+          type="submit"
+          class="col-span-full bg-violet-600 text-white font-semibold py-3 rounded-md hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 transition"
+        >
+          Calculate Payroll
+        </button>
+      </form>
+    </section>
+
+    <!-- Pay Stub Output -->
+    <section id="result" class="hidden bg-white border border-violet-300 rounded-lg p-6 shadow-md">
+      <h2 class="text-2xl font-semibold mb-4 text-violet-700">Pay Stub</h2>
+      <div
+        id="paystub"
+        class="space-y-1 text-gray-700 font-mono text-sm sm:text-base"
+      ></div>
+      <button
+        onclick="window.print()"
+        class="mt-6 bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition"
+      >
+        Print Pay Stub
+      </button>
+    </section>
+  </main>
 </body>
 </html>
