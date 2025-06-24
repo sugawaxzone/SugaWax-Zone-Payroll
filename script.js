@@ -45,6 +45,10 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const name = document.getElementById("newEmployeeName").value;
     const wage = parseFloat(document.getElementById("newEmployeeWage").value);
+    if (isNaN(wage) || wage <= 0) {
+      alert("Please enter a valid hourly wage.");
+      return;
+    }
     const employees = loadEmployees();
     employees.push({ name, wage, ytdGross: 0, ytdCpp: 0, ytdEi: 0 });
     saveEmployees(employees);
