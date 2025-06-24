@@ -2,10 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SugaWax Zone Payroll</title>
-  <script src="script.js" defer></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="script.js" defer></script>
+  <style>
+    .input {
+      @apply border border-gray-300 rounded px-3 py-2 w-full;
+    }
+    @media print {
+      body {
+        background: white;
+      }
+      .print\:hidden {
+        display: none !important;
+      }
+      #payroll-form, h1 {
+        display: none;
+      }
+      #result {
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      #paystub {
+        border: 1px solid #ccc;
+        padding: 20px;
+        max-width: 600px;
+        margin: auto;
+      }
+    }
+  </style>
 </head>
 <body class="bg-gray-50 p-6">
   <div class="max-w-4xl mx-auto">
@@ -25,16 +52,11 @@
 
     <div id="result" class="mt-8 hidden">
       <h2 class="text-2xl font-semibold mb-4">Pay Stub</h2>
-      <div id="paystub" class="bg-white p-6 shadow rounded space-y-2">
-        <!-- Generated paystub will appear here -->
-      </div>
+      <div id="paystub" class="bg-white p-6 shadow rounded space-y-2"></div>
+      <button onclick="window.print()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 print:hidden">
+        Print Pay Stub
+      </button>
     </div>
   </div>
-
-  <style>
-    .input {
-      @apply border border-gray-300 rounded px-3 py-2 w-full;
-    }
-  </style>
 </body>
 </html>
