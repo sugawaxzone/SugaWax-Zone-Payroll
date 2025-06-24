@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SugaWax Zone Payroll</title>
+  <script src="script.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-6">SugaWax Zone Payroll System</h1>
+
+    <form id="payroll-form" class="bg-white shadow-md rounded p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <input type="text" placeholder="Employee Name" id="name" class="input" required>
+        <input type="number" placeholder="Hours Worked" id="hours" class="input" required>
+        <input type="number" placeholder="Hourly Wage" id="wage" class="input" required>
+        <input type="number" placeholder="Tips" id="tips" class="input">
+        <input type="number" placeholder="Commission" id="commission" class="input">
+        <input type="text" placeholder="Pay Period (e.g. June 1–15)" id="period" class="input" required>
+      </div>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Payroll</button>
+    </form>
+
+    <div id="result" class="mt-8 hidden">
+      <h2 class="text-2xl font-semibold mb-4">Pay Stub</h2>
+      <div id="paystub" class="bg-white p-6 shadow rounded space-y-2">
+        <!-- Generated paystub will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .input {
+      @apply border border-gray-300 rounded px-3 py-2 w-full;
+    }
+  </style>
+</body>
+</html>
