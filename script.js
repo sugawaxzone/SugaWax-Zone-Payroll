@@ -1,40 +1,23 @@
-// script.js - Accurate CRA-like payroll calculations with YTD and tax credits
+// script.js
+const payPeriodsPerYear = 26;
+const CPP_ANNUAL_MAX = 68500;
+const CPP_BASIC_EXEMPTION = 3500;
+const CPP_RATE = 0.0595;
+const EI_ANNUAL_MAX = 63200;
+const EI_RATE = 0.0166;
+const TD1_FEDERAL = 16129;
+const TD1_ONTARIO = 12747;
 
-// CRA constants for 2025 Ontario (adjust if needed)
-const CRA_2025 = {
-  payPeriodsPerYear: 26,
-  CPP_ANNUAL_MAX: 68500,
-  CPP_BASIC_EXEMPTION: 3500,
-  CPP_RATE: 0.0595,
-  EI_ANNUAL_MAX: 63200,
-  EI_RATE: 0.0166,
-  federalTaxBrackets: [
-    { limit: 55867, rate: 0.15 },
-    { limit: 111733, rate: 0.205 },
-    { limit: Infinity, rate: 0.26 },
-  ],
-  ontarioTaxBrackets: [
-    { limit: 51446, rate: 0.0505 },
-    { limit: 102894, rate: 0.0915 },
-    { limit: Infinity, rate: 0.1116 },
-  ],
-};
+function federalTaxAnnual(income) {
+  if (income <= 55867) return income * 0.15;
+  else if (income <= 111733) return 55867 * 0.15 + (income - 55867) * 0.205;
+  else return 55867 * 0.15 + (111733 - 55867) * 0.205 + (income - 111733) * 0.26;
+}
 
-// Personal amounts from TD1 federal and provincial forms (adjust as per your employee)
-const FEDERAL_PERSONAL_AMOUNT = 16129;
-const PROVINCIAL_PERSONAL_AMOUNT = 12747;
-
-// Helper function: calculate tax based on brackets and income
-function calculateTax(income, brackets) {
-  let tax = 0;
-  let prevLimit = 0;
-  for (const bracket of brackets) {
-    if (income <= prevLimit) break;
-    const taxable = Math.min(income, bracket.limit) - prevLimit;
-    tax += taxable * bracket.rate;
-    prevLimit = bracket.limit;
-  }
-  return tax;
+function ontarioTaxAnnual(income) {
+  if (income <= 51446) return income * 0.0505;
+  else if (income <= 102894) return 51446 * 0.0505 + (income - 51446) * 0.0915;
+  else return 51446 * 0.0505 + (102894 - 51446) * 0.0915 + (income - 102894) * 0.1116;
 }
 
 function loadEmployees() {
@@ -55,7 +38,6 @@ function populateEmployeeDropdown() {
     option.textContent = emp.name;
     select.appendChild(option);
   });
-  select.value = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -63,18 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("add-employee-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    const name = document.getElementById("newEmployeeName").value.trim();
+    const name = document.getElementById("newEmployeeName").value;
     const wage = parseFloat(document.getElementById("newEmployeeWage").value);
-    if (!name) {
-      alert("Please enter a valid employee name.");
-      return;
-    }
     if (isNaN(wage) || wage <= 0) {
       alert("Please enter a valid hourly wage.");
       return;
     }
     const employees = loadEmployees();
-    employees.push({ name, wage, ytds: {} });
+    employees.push({ name, wage, ytdGross: 0, ytdCpp: 0, ytdEi: 0 });
     saveEmployees(employees);
     populateEmployeeDropdown();
     e.target.reset();
@@ -82,130 +60,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("payroll-form").addEventListener("submit", (e) => {
     e.preventDefault();
-
     const employees = loadEmployees();
     const idx = parseInt(document.getElementById("employeeSelect").value);
-    if (isNaN(idx) || idx < 0 || idx >= employees.length) {
-      alert("Please select a valid employee.");
-      return;
-    }
     const emp = employees[idx];
 
-    const payDateStr = document.getElementById("payDate").value;
-    if (!payDateStr) {
-      alert("Please enter a valid pay date.");
-      return;
-    }
-    const payDate = new Date(payDateStr);
-    const year = payDate.getFullYear();
-
-    const cra = CRA_2025; // Could extend to support multiple years
-
-    // Initialize YTD data for this year if not present
-    if (!emp.ytds) emp.ytds = {};
-    if (!emp.ytds[year]) {
-      emp.ytds[year] = {
-        ytdGross: 0,
-        ytdCpp: 0,
-        ytdEi: 0,
-        ytdTaxableIncome: 0,
-        ytdFederalTax: 0,
-        ytdProvincialTax: 0,
-      };
-    }
-    const ytd = emp.ytds[year];
-
-    // Parse inputs
     const hours = parseFloat(document.getElementById("hours").value);
     const tips = parseFloat(document.getElementById("tips").value) || 0;
     const commission = parseFloat(document.getElementById("commission").value) || 0;
-    const period = document.getElementById("period").value.trim();
-
-    if (isNaN(hours) || hours < 0) {
-      alert("Please enter a valid number of hours worked.");
-      return;
-    }
+    const period = document.getElementById("period").value;
 
     const basePay = hours * emp.wage;
     const grossPay = basePay + tips + commission;
+    const annualGross = emp.ytdGross + grossPay;
 
-    // === CPP Calculation ===
-    // CPP is calculated on pensionable earnings above exemption ($3500 annual), capped at annual max.
-    const pensionableEarningsYTD = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
-    const maxCppBase = cra.CPP_ANNUAL_MAX - cra.CPP_BASIC_EXEMPTION;
-    const maxCppContribution = maxCppBase * cra.CPP_RATE;
+    // Income tax based on annualized taxable income, Option 1 (CRA)
+    let cppExemptPerPeriod = CPP_BASIC_EXEMPTION / payPeriodsPerYear;
+    let cppPensionable = Math.max(0, basePay - cppExemptPerPeriod);
+    let cpp = Math.min(cppPensionable, CPP_ANNUAL_MAX - emp.ytdGross) * CPP_RATE;
+    const maxCpp = (CPP_ANNUAL_MAX - CPP_BASIC_EXEMPTION) * CPP_RATE;
+    if (emp.ytdCpp + cpp > maxCpp) cpp = maxCpp - emp.ytdCpp;
 
-    // Calculate CPP contribution for this period
-    let cpp;
-    if (pensionableEarningsYTD >= maxCppBase) {
-      // Max CPP already reached this year
-      cpp = 0;
-    } else if (pensionableEarningsYTD + grossPay > maxCppBase) {
-      // Partial CPP contribution to reach max this period
-      cpp = (maxCppBase - pensionableEarningsYTD) * cra.CPP_RATE;
-    } else {
-      // Regular CPP on full gross pay
-      cpp = grossPay * cra.CPP_RATE;
-    }
-    cpp = Math.max(0, cpp);
+    let eiInsurable = Math.min(basePay, EI_ANNUAL_MAX - emp.ytdGross);
+    let ei = eiInsurable * EI_RATE;
+    const maxEi = EI_ANNUAL_MAX * EI_RATE;
+    if (emp.ytdEi + ei > maxEi) ei = maxEi - emp.ytdEi;
 
-    // === EI Calculation ===
-    // EI is calculated on insurable earnings up to annual max.
-    const eiBaseRemaining = Math.max(0, cra.EI_ANNUAL_MAX - ytd.ytdGross);
-    const eiGross = Math.min(grossPay, eiBaseRemaining);
-    let ei = eiGross * cra.EI_RATE;
-    const maxEiContribution = cra.EI_ANNUAL_MAX * cra.EI_RATE;
-    if (ytd.ytdEi + ei > maxEiContribution) {
-      ei = Math.max(0, maxEiContribution - ytd.ytdEi);
-    }
-    ei = Math.max(0, ei);
+    let taxableIncome = basePay - cpp - ei;
+    let annualizedTaxable = taxableIncome * payPeriodsPerYear;
 
-    // === Taxable Income ===
-    // Taxable income = gross pay - CPP - EI
-    const taxableIncomeThisPeriod = grossPay - cpp - ei;
-    const annualTaxableIncome = ytd.ytdTaxableIncome + taxableIncomeThisPeriod;
+    let fedTaxAnnual = federalTaxAnnual(annualizedTaxable) - TD1_FEDERAL * 0.15;
+    let ontTaxAnnual = ontarioTaxAnnual(annualizedTaxable) - TD1_ONTARIO * 0.0505;
+    fedTaxAnnual = Math.max(fedTaxAnnual, 0);
+    ontTaxAnnual = Math.max(ontTaxAnnual, 0);
 
-    // === Federal Tax Calculation ===
-    const totalFederalTax = calculateTax(annualTaxableIncome, cra.federalTaxBrackets);
-    const federalTaxCredit = FEDERAL_PERSONAL_AMOUNT * cra.federalTaxBrackets[0].rate;
-    let adjFederalTax = Math.max(0, totalFederalTax - federalTaxCredit);
+    const fedTax = fedTaxAnnual / payPeriodsPerYear;
+    const ontTax = ontTaxAnnual / payPeriodsPerYear;
 
-    const prevFederalTax = calculateTax(ytd.ytdTaxableIncome, cra.federalTaxBrackets);
-    let prevAdjFederalTax = Math.max(0, prevFederalTax - federalTaxCredit);
-
-    let fedTax = (adjFederalTax - prevAdjFederalTax) / cra.payPeriodsPerYear;
-    fedTax = Math.max(0, fedTax);
-
-    // === Provincial Tax Calculation (Ontario) ===
-    const totalProvincialTax = calculateTax(annualTaxableIncome, cra.ontarioTaxBrackets);
-    const provincialTaxCredit = PROVINCIAL_PERSONAL_AMOUNT * cra.ontarioTaxBrackets[0].rate;
-    let adjProvincialTax = Math.max(0, totalProvincialTax - provincialTaxCredit);
-
-    const prevProvincialTax = calculateTax(ytd.ytdTaxableIncome, cra.ontarioTaxBrackets);
-    let prevAdjProvincialTax = Math.max(0, prevProvincialTax - provincialTaxCredit);
-
-    let ontTax = (adjProvincialTax - prevAdjProvincialTax) / cra.payPeriodsPerYear;
-    ontTax = Math.max(0, ontTax);
-
-    // === Net Pay ===
-    const totalDeductions = cpp + ei + fedTax + ontTax;
+    const totalDeductions = fedTax + ontTax + cpp + ei;
     const netPay = grossPay - totalDeductions;
 
-    // === Update YTD amounts ===
-    ytd.ytdGross += grossPay;
-    ytd.ytdCpp += cpp;
-    ytd.ytdEi += ei;
-    ytd.ytdTaxableIncome += taxableIncomeThisPeriod;
-    ytd.ytdFederalTax += fedTax;
-    ytd.ytdProvincialTax += ontTax;
-
+    // Update employee YTDs
+    emp.ytdGross += grossPay;
+    emp.ytdCpp += cpp;
+    emp.ytdEi += ei;
     saveEmployees(employees);
 
-    // === Show Pay Stub ===
+    // Render Pay Stub
     document.getElementById("result").classList.remove("hidden");
     document.getElementById("paystub").innerHTML = `
       <p><strong>Company:</strong> SugaWax Zone</p>
-      <p><strong>Pay Date:</strong> ${payDate.toLocaleDateString()}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
       <p><strong>Name:</strong> ${emp.name}</p>
       <p><strong>Pay Period:</strong> ${period}</p>
       <p><strong>Hours Worked:</strong> ${hours}</p>
@@ -213,14 +117,15 @@ document.addEventListener("DOMContentLoaded", () => {
       <p><strong>Base Pay:</strong> $${basePay.toFixed(2)}</p>
       <p><strong>Tips:</strong> $${tips.toFixed(2)}</p>
       <p><strong>Commission:</strong> $${commission.toFixed(2)}</p>
-      <hr class="my-2 border-violet-300" />
+      <hr>
       <p><strong>Gross Pay:</strong> $${grossPay.toFixed(2)}</p>
       <p><strong>CPP:</strong> -$${cpp.toFixed(2)}</p>
       <p><strong>EI:</strong> -$${ei.toFixed(2)}</p>
       <p><strong>Federal Tax:</strong> -$${fedTax.toFixed(2)}</p>
       <p><strong>Ontario Tax:</strong> -$${ontTax.toFixed(2)}</p>
-      <hr class="my-2 border-violet-300" />
-      <p class="text-xl font-bold text-violet-700"><strong>Net Pay:</strong> $${netPay.toFixed(2)}</p>
+      <hr>
+      <p class="text-xl font-bold"><strong>Net Pay:</strong> $${netPay.toFixed(2)}</p>
     `;
+    e.target.reset();
   });
 });
