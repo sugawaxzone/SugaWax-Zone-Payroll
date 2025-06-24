@@ -1,71 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Test Add Employees</title>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SugaWax Zone Payroll</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-6 bg-gray-50">
+<body class="bg-violet-50 min-h-screen flex flex-col items-center p-6">
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-violet-700">SugaWax Zone Payroll Calculator</h1>
+  </header>
 
-  <h1 class="text-2xl mb-4">Add Employee</h1>
-  <form id="add-employee-form" class="space-y-4 max-w-sm">
-    <input id="newEmployeeName" type="text" placeholder="Employee Name" required
-      class="w-full p-2 border border-gray-300 rounded" />
-    <input id="newEmployeeWage" type="number" step="0.01" min="0" placeholder="Hourly Wage ($)" required
-      class="w-full p-2 border border-gray-300 rounded" />
-    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded">Add Employee</button>
-  </form>
+  <!-- Add Employee -->
+  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
+    <h2 class="text-xl font-semibold mb-4 text-violet-600">Add New Employee</h2>
+    <form id="add-employee-form" class="space-y-4">
+      <input
+        id="newEmployeeName"
+        type="text"
+        placeholder="Employee Name"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      />
+      <input
+        id="newEmployeeWage"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Hourly Wage ($)"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      />
+      <button
+        type="submit"
+        class="w-full bg-violet-700 hover:bg-violet-800 text-white py-2 rounded transition"
+      >
+        Add Employee
+      </button>
+    </form>
+  </section>
 
-  <h2 class="text-xl mt-6 mb-2">Employees</h2>
-  <select id="employeeSelect" class="w-full max-w-sm p-2 border border-gray-300 rounded">
-    <option value="">Select Employee</option>
-  </select>
+  <!-- Payroll Form -->
+  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
+    <h2 class="text-xl font-semibold mb-4 text-violet-600">Process Payroll</h2>
+    <form id="payroll-form" class="space-y-4">
+      <select
+        id="employeeSelect"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      >
+        <option value="">Select Employee</option>
+      </select>
 
-  <script>
-    function loadEmployees() {
-      return JSON.parse(localStorage.getItem("employees") || "[]");
-    }
+      <label class="block text-violet-700 font-semibold" for="payDate">Pay Date</label>
+      <input
+        id="payDate"
+        type="date"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      />
 
-    function saveEmployees(employees) {
-      localStorage.setItem("employees", JSON.stringify(employees));
-    }
+      <input
+        id="period"
+        type="text"
+        placeholder="Pay Period (e.g. June 01 - June 14)"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      />
 
-    function populateEmployeeDropdown() {
-      const employees = loadEmployees();
-      const select = document.getElementById("employeeSelect");
-      select.innerHTML = '<option value="">Select Employee</option>';
-      employees.forEach((emp, idx) => {
-        const option = document.createElement("option");
-        option.value = idx;
-        option.textContent = emp.name + " ($" + emp.wage.toFixed(2) + ")";
-        select.appendChild(option);
-      });
-    }
+      <input
+        id="hours"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="Hours Worked"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+        required
+      />
+      <input
+        id="tips"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="Tips (optional)"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+      />
+      <input
+        id="commission"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="Commission (optional)"
+        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
+      />
 
-    document.addEventListener("DOMContentLoaded", () => {
-      populateEmployeeDropdown();
+      <button
+        type="submit"
+        class="w-full bg-violet-700 hover:bg-violet-800 text-white py-2 rounded transition"
+      >
+        Calculate Payroll
+      </button>
+    </form>
+  </section>
 
-      document.getElementById("add-employee-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const name = document.getElementById("newEmployeeName").value.trim();
-        const wage = parseFloat(document.getElementById("newEmployeeWage").value);
-        if (!name) {
-          alert("Please enter a name.");
-          return;
-        }
-        if (isNaN(wage) || wage <= 0) {
-          alert("Please enter a valid hourly wage.");
-          return;
-        }
-        const employees = loadEmployees();
-        employees.push({ name, wage, ytdGross: 0, ytdCpp: 0, ytdEi: 0 });
-        saveEmployees(employees);
-        populateEmployeeDropdown();
-        e.target.reset();
-      });
-    });
-  </script>
+  <!-- Result -->
+  <section id="result" class="bg-white p-6 rounded-lg shadow-md w-full max-w-md hidden">
+    <h2 class="text-xl font-semibold mb-4 text-violet-600">Pay Stub</h2>
+    <div id="paystub" class="text-violet-900 space-y-1"></div>
+  </section>
 
+  <script src="script.js"></script>
 </body>
 </html>
