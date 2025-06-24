@@ -52,6 +52,8 @@ function populateEmployeeDropdown() {
     option.textContent = emp.name;
     select.appendChild(option);
   });
+  // Reset selection after repopulating
+  select.value = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -87,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const emp = employees[idx];
 
-    // Parse pay date and year
     const payDateStr = document.getElementById("payDate").value;
     if (!payDateStr) {
       alert("Please enter a valid pay date.");
@@ -128,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
       (calculateTax(annualGross, cra.ontarioTaxBrackets) - calculateTax(ytd.ytdGross, cra.ontarioTaxBrackets)) / cra.payPeriodsPerYear
     );
 
-    // CPP calculation
     const totalPensionable = Math.max(0, annualGross - cra.CPP_BASIC_EXEMPTION);
     const ytdPensionable = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
     let cpp = Math.min(grossPay, totalPensionable - ytdPensionable) * cra.CPP_RATE;
@@ -136,7 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ytd.ytdCpp + cpp > maxCpp) cpp = maxCpp - ytd.ytdCpp;
     if (cpp < 0) cpp = 0;
 
-    // EI calculation
     let eiBase = Math.max(0, cra.EI_ANNUAL_MAX - ytd.ytdGross);
     let ei = Math.min(grossPay, eiBase) * cra.EI_RATE;
     const maxEi = cra.EI_ANNUAL_MAX * cra.EI_RATE;
@@ -146,13 +145,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalDeductions = fedTax + ontTax + cpp + ei;
     const netPay = grossPay - totalDeductions;
 
-    // Update YTD
     ytd.ytdGross += grossPay;
     ytd.ytdCpp += cpp;
     ytd.ytdEi += ei;
     saveEmployees(employees);
 
-    // Show paystub
     document.getElementById("result").classList.remove("hidden");
     document.getElementById("paystub").innerHTML = `
       <p><strong>Company:</strong> SugaWax Zone</p>
