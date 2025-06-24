@@ -1,6 +1,6 @@
 // script.js
 
-// Payroll entries will be stored here temporarily (can also use localStorage)
+// Array to store payroll entries
 const payrollData = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -19,43 +19,51 @@ document.addEventListener("DOMContentLoaded", () => {
     const commission = parseFloat(document.getElementById("commission").value) || 0;
     const period = document.getElementById("period").value;
 
-    // Calculate total earnings
-const basePay = hours * wage;
-const grossPay = basePay + tips + commission;
+    // --- Earnings ---
+    const basePay = hours * wage;
+    const grossPay = basePay + tips + commission;
 
-// --- CPP ---
-const pensionableEarnings = Math.max(0, Math.min(grossPay - 3500 / 26, 68500 / 26)); // pay period = bi-weekly (approx 26/year)
-const cpp = pensionableEarnings * 0.0595;
+    // --- CPP Calculation (2025) ---
+    const cppExempt = 3500 / 26; // basic exemption for bi-weekly pay
+    const cppMaxEarnings = 68500 / 26;
+    const pensionableEarnings = Math.max(0, Math.min(grossPay - cppExempt, cppMaxEarnings));
+    const cpp = pensionableEarnings * 0.0595;
 
-// --- EI ---
-const ei = Math.min(grossPay, 63200 / 26) * 0.0166;
+    // --- EI Calculation (2025) ---
+    const eiMaxEarnings = 63200 / 26;
+    const ei = Math.min(grossPay, eiMaxEarnings) * 0.0166;
 
-// --- Federal Tax ---
-let fedTax = 0;
-if (grossPay <= 55867 / 26) {
-  fedTax = grossPay * 0.15;
-} else if (grossPay <= 111733 / 26) {
-  fedTax = (55867 / 26) * 0.15 + (grossPay - (55867 / 26)) * 0.205;
-} else {
-  fedTax = (55867 / 26) * 0.15 + ((111733 - 55867) / 26) * 0.205 + (grossPay - (111733 / 26)) * 0.26;
-}
+    // --- Federal Tax (2025) ---
+    let fedTax = 0;
+    if (grossPay <= 55867 / 26) {
+      fedTax = grossPay * 0.15;
+    } else if (grossPay <= 111733 / 26) {
+      fedTax = (55867 / 26) * 0.15 + (grossPay - (55867 / 26)) * 0.205;
+    } else {
+      fedTax =
+        (55867 / 26) * 0.15 +
+        ((111733 - 55867) / 26) * 0.205 +
+        (grossPay - (111733 / 26)) * 0.26;
+    }
 
-// --- Ontario Tax ---
-let ontTax = 0;
-if (grossPay <= 51446 / 26) {
-  ontTax = grossPay * 0.0505;
-} else if (grossPay <= 102894 / 26) {
-  ontTax = (51446 / 26) * 0.0505 + (grossPay - (51446 / 26)) * 0.0915;
-} else {
-  ontTax = (51446 / 26) * 0.0505 + ((102894 - 51446) / 26) * 0.0915 + (grossPay - (102894 / 26)) * 0.1116;
-}
+    // --- Ontario Tax (2025) ---
+    let ontTax = 0;
+    if (grossPay <= 51446 / 26) {
+      ontTax = grossPay * 0.0505;
+    } else if (grossPay <= 102894 / 26) {
+      ontTax = (51446 / 26) * 0.0505 + (grossPay - (51446 / 26)) * 0.0915;
+    } else {
+      ontTax =
+        (51446 / 26) * 0.0505 +
+        ((102894 - 51446) / 26) * 0.0915 +
+        (grossPay - (102894 / 26)) * 0.1116;
+    }
 
-// --- Total Deductions & Net Pay ---
-const totalDeductions = cpp + ei + fedTax + ontTax;
-const netPay = grossPay - totalDeductions;
+    // --- Final Deductions & Net Pay ---
+    const totalDeductions = cpp + ei + fedTax + ontTax;
+    const netPay = grossPay - totalDeductions;
 
-
-    // Store data temporarily
+    // --- Store employee payroll entry ---
     const employee = {
       name,
       hours,
@@ -64,11 +72,17 @@ const netPay = grossPay - totalDeductions;
       commission,
       basePay,
       grossPay,
-      period
+      cpp,
+      ei,
+      fedTax,
+      ontTax,
+      totalDeductions,
+      netPay,
+      period,
     };
     payrollData.push(employee);
 
-    // Display pay stub
+    // --- Generate pay stub ---
     const stubHTML = `
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Pay Period:</strong> ${period}</p>
@@ -77,13 +91,20 @@ const netPay = grossPay - totalDeductions;
       <p><strong>Base Pay:</strong> $${basePay.toFixed(2)}</p>
       <p><strong>Tips:</strong> $${tips.toFixed(2)}</p>
       <p><strong>Commission:</strong> $${commission.toFixed(2)}</p>
-      <p class="font-bold text-lg"><strong>Gross Pay:</strong> $${grossPay.toFixed(2)}</p>
-      <p class="text-gray-500">(Deductions and net pay will be shown in Part 3)</p>
+      <hr>
+      <p><strong>Gross Pay:</strong> $${grossPay.toFixed(2)}</p>
+      <p><strong>CPP:</strong> -$${cpp.toFixed(2)}</p>
+      <p><strong>EI:</strong> -$${ei.toFixed(2)}</p>
+      <p><strong>Federal Tax:</strong> -$${fedTax.toFixed(2)}</p>
+      <p><strong>Ontario Tax:</strong> -$${ontTax.toFixed(2)}</p>
+      <hr>
+      <p class="text-xl font-bold"><strong>Net Pay:</strong> $${netPay.toFixed(2)}</p>
     `;
+
     paystubContainer.innerHTML = stubHTML;
     resultSection.classList.remove("hidden");
 
-    // Optional: Reset form
+    // Optional: Clear form
     form.reset();
   });
 });
