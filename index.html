@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SugaWax Zone Payroll</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="script.js" defer></script>
@@ -40,13 +40,19 @@
 
     <form id="payroll-form" class="bg-white shadow-md rounded p-6 space-y-4">
       <div class="grid grid-cols-2 gap-4">
-        <input type="text" placeholder="Employee Name" id="name" class="input" required>
-        <input type="number" placeholder="Hours Worked" id="hours" class="input" required>
-        <input type="number" placeholder="Hourly Wage" id="wage" class="input" required>
-        <input type="number" placeholder="Tips" id="tips" class="input">
-        <input type="number" placeholder="Commission" id="commission" class="input">
-        <input type="text" placeholder="Pay Period (e.g. June 1–15)" id="period" class="input" required>
+        <input type="text" placeholder="Employee Name" id="name" class="input" required />
+        <input type="number" placeholder="Hours Worked" id="hours" class="input" required />
+        <input type="number" placeholder="Hourly Wage" id="wage" class="input" required />
+        <input type="number" placeholder="Tips" id="tips" class="input" />
+        <input type="number" placeholder="Commission" id="commission" class="input" />
+        <input type="text" placeholder="Pay Period (e.g. June 1–15)" id="period" class="input" required />
+
+        <!-- New YTD Inputs -->
+        <input type="number" placeholder="YTD Gross Earnings" id="ytdGross" class="input" value="0" required />
+        <input type="number" placeholder="YTD CPP Deducted" id="ytdCpp" class="input" value="0" required />
+        <input type="number" placeholder="YTD EI Deducted" id="ytdEi" class="input" value="0" required />
       </div>
+
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Payroll</button>
     </form>
 
