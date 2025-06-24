@@ -20,8 +20,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const period = document.getElementById("period").value;
 
     // Calculate total earnings
-    const basePay = hours * wage;
-    const grossPay = basePay + tips + commission;
+const basePay = hours * wage;
+const grossPay = basePay + tips + commission;
+
+// --- CPP ---
+const pensionableEarnings = Math.max(0, Math.min(grossPay - 3500 / 26, 68500 / 26)); // pay period = bi-weekly (approx 26/year)
+const cpp = pensionableEarnings * 0.0595;
+
+// --- EI ---
+const ei = Math.min(grossPay, 63200 / 26) * 0.0166;
+
+// --- Federal Tax ---
+let fedTax = 0;
+if (grossPay <= 55867 / 26) {
+  fedTax = grossPay * 0.15;
+} else if (grossPay <= 111733 / 26) {
+  fedTax = (55867 / 26) * 0.15 + (grossPay - (55867 / 26)) * 0.205;
+} else {
+  fedTax = (55867 / 26) * 0.15 + ((111733 - 55867) / 26) * 0.205 + (grossPay - (111733 / 26)) * 0.26;
+}
+
+// --- Ontario Tax ---
+let ontTax = 0;
+if (grossPay <= 51446 / 26) {
+  ontTax = grossPay * 0.0505;
+} else if (grossPay <= 102894 / 26) {
+  ontTax = (51446 / 26) * 0.0505 + (grossPay - (51446 / 26)) * 0.0915;
+} else {
+  ontTax = (51446 / 26) * 0.0505 + ((102894 - 51446) / 26) * 0.0915 + (grossPay - (102894 / 26)) * 0.1116;
+}
+
+// --- Total Deductions & Net Pay ---
+const totalDeductions = cpp + ei + fedTax + ontTax;
+const netPay = grossPay - totalDeductions;
+
 
     // Store data temporarily
     const employee = {
