@@ -1,4 +1,4 @@
-// Updated script.js with detailed calculation and comments
+// script.js - Updated for accurate CRA-like payroll calculations
 
 const CRA_DATA = {
   2025: {
@@ -20,6 +20,10 @@ const CRA_DATA = {
     ],
   },
 };
+
+// You can change these personal amounts to match your TD1 form values
+const FEDERAL_PERSONAL_AMOUNT = 16129;  // From TD1 federal
+const PROVINCIAL_PERSONAL_AMOUNT = 12747; // From TD1 provincial (Ontario)
 
 function calculateTax(income, brackets) {
   let tax = 0;
@@ -97,14 +101,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const cra = CRA_DATA[year] || CRA_DATA[2025];
 
-    // Initialize YTD records if missing or new year
+    // Initialize YTD data structure if missing or new year
     if (!emp.ytds) emp.ytds = {};
     if (!emp.ytds[year]) {
       emp.ytds[year] = { ytdGross: 0, ytdCpp: 0, ytdEi: 0 };
     }
     const ytd = emp.ytds[year];
 
-    // Parse inputs carefully
+    // Parse inputs
     const hours = parseFloat(document.getElementById("hours").value);
     const tips = parseFloat(document.getElementById("tips").value) || 0;
     const commission = parseFloat(document.getElementById("commission").value) || 0;
@@ -118,62 +122,75 @@ document.addEventListener("DOMContentLoaded", () => {
     const basePay = hours * emp.wage;
     const grossPay = basePay + tips + commission;
 
-    // Annual gross including current period
+    // Calculate annual gross including current pay period
     const annualGross = ytd.ytdGross + grossPay;
 
-    // Calculate annual federal and provincial taxes on YTD + current gross
-    const totalFedTax = calculateTax(annualGross, cra.federalTaxBrackets);
-    const totalOntTax = calculateTax(annualGross, cra.ontarioTaxBrackets);
+    // Calculate total federal and provincial tax BEFORE credits
+    const totalFederalTax = calculateTax(annualGross, cra.federalTaxBrackets);
+    const totalProvincialTax = calculateTax(annualGross, cra.ontarioTaxBrackets);
 
-    // Subtract previous YTD tax to get tax for current pay period
-    const prevFedTax = calculateTax(ytd.ytdGross, cra.federalTaxBrackets);
-    const prevOntTax = calculateTax(ytd.ytdGross, cra.ontarioTaxBrackets);
+    // Calculate tax credits for personal amounts
+    const federalTaxCredit = FEDERAL_PERSONAL_AMOUNT * cra.federalTaxBrackets[0].rate;
+    const provincialTaxCredit = PROVINCIAL_PERSONAL_AMOUNT * cra.ontarioTaxBrackets[0].rate;
 
-    let fedTax = (totalFedTax - prevFedTax) / cra.payPeriodsPerYear;
-    let ontTax = (totalOntTax - prevOntTax) / cra.payPeriodsPerYear;
+    // Adjust tax by subtracting tax credits (non-refundable tax credits)
+    let adjFederalTax = Math.max(0, totalFederalTax - federalTaxCredit);
+    let adjProvincialTax = Math.max(0, totalProvincialTax - provincialTaxCredit);
 
-    // Fix negative tax (can happen at year start)
+    // Calculate YTD taxes BEFORE credits for previous gross
+    const prevFederalTax = calculateTax(ytd.ytdGross, cra.federalTaxBrackets);
+    const prevProvincialTax = calculateTax(ytd.ytdGross, cra.ontarioTaxBrackets);
+
+    let prevAdjFederalTax = Math.max(0, prevFederalTax - federalTaxCredit);
+    let prevAdjProvincialTax = Math.max(0, prevProvincialTax - provincialTaxCredit);
+
+    // Calculate taxes for current pay period (annualized difference divided by pay periods)
+    let fedTax = (adjFederalTax - prevAdjFederalTax) / cra.payPeriodsPerYear;
+    let ontTax = (adjProvincialTax - prevAdjProvincialTax) / cra.payPeriodsPerYear;
+
     fedTax = Math.max(0, fedTax);
     ontTax = Math.max(0, ontTax);
 
-    // CPP calculations:
-    // Only earnings above basic exemption count toward CPP
-    const pensionableGross = Math.max(0, grossPay - cra.CPP_BASIC_EXEMPTION / cra.payPeriodsPerYear);
-    const totalPensionableYTD = Math.max(0, annualGross - cra.CPP_BASIC_EXEMPTION);
-    const pensionableYTDPrev = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
+    // CPP Calculation:
+    // Pensionable earnings = gross pay (no exemption prorated per period)
+    const pensionableEarningsYTD = Math.max(0, ytd.ytdGross - cra.CPP_BASIC_EXEMPTION);
+    const maxCppBase = cra.CPP_ANNUAL_MAX - cra.CPP_BASIC_EXEMPTION;
+    const maxCppContribution = maxCppBase * cra.CPP_RATE;
 
-    // CPP for this pay period
-    let cpp = pensionableGross * cra.CPP_RATE;
-
-    // Ensure we don't exceed max CPP contributions
-    const maxCpp = (cra.CPP_ANNUAL_MAX - cra.CPP_BASIC_EXEMPTION) * cra.CPP_RATE;
-    if (ytd.ytdCpp + cpp > maxCpp) {
-      cpp = Math.max(0, maxCpp - ytd.ytdCpp);
+    // CPP for this pay period = grossPay * rate, limited by max contribution - contributed YTD
+    let cpp = grossPay * cra.CPP_RATE;
+    if (pensionableEarningsYTD >= maxCppBase) {
+      // Already maxed out CPP contributions this year
+      cpp = 0;
+    } else if (pensionableEarningsYTD + grossPay > maxCppBase) {
+      // Partial CPP contribution to reach max this period
+      cpp = (maxCppBase - pensionableEarningsYTD) * cra.CPP_RATE;
     }
 
-    // EI calculations:
-    // EI applies to gross pay, capped annually
+    cpp = Math.max(0, cpp);
+
+    // EI Calculation:
     const eiBaseRemaining = Math.max(0, cra.EI_ANNUAL_MAX - ytd.ytdGross);
     const eiGross = Math.min(grossPay, eiBaseRemaining);
     let ei = eiGross * cra.EI_RATE;
-
     const maxEi = cra.EI_ANNUAL_MAX * cra.EI_RATE;
     if (ytd.ytdEi + ei > maxEi) {
       ei = Math.max(0, maxEi - ytd.ytdEi);
     }
+    ei = Math.max(0, ei);
 
-    // Total deductions and net pay
+    // Total deductions
     const totalDeductions = fedTax + ontTax + cpp + ei;
     const netPay = grossPay - totalDeductions;
 
-    // Update employee YTD data for this year
+    // Update YTD amounts
     ytd.ytdGross += grossPay;
     ytd.ytdCpp += cpp;
     ytd.ytdEi += ei;
 
     saveEmployees(employees);
 
-    // Display pay stub with clear formatting
+    // Show pay stub
     document.getElementById("result").classList.remove("hidden");
     document.getElementById("paystub").innerHTML = `
       <p><strong>Company:</strong> SugaWax Zone</p>
