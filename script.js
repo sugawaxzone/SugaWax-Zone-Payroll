@@ -1,4 +1,4 @@
-// CRA 2025 Ontario constants
+// script.js
 const payPeriodsPerYear = 26;
 const CPP_ANNUAL_MAX = 68500;
 const CPP_BASIC_EXEMPTION = 3500;
@@ -8,14 +8,12 @@ const EI_RATE = 0.0166;
 const TD1_FEDERAL = 16129;
 const TD1_ONTARIO = 12747;
 
-// Federal tax brackets (simplified)
 function federalTaxAnnual(income) {
   if (income <= 55867) return income * 0.15;
   else if (income <= 111733) return 55867 * 0.15 + (income - 55867) * 0.205;
   else return 55867 * 0.15 + (111733 - 55867) * 0.205 + (income - 111733) * 0.26;
 }
 
-// Ontario tax brackets (simplified)
 function ontarioTaxAnnual(income) {
   if (income <= 51446) return income * 0.0505;
   else if (income <= 102894) return 51446 * 0.0505 + (income - 51446) * 0.0915;
@@ -37,7 +35,7 @@ function populateEmployeeDropdown() {
   employees.forEach((emp, idx) => {
     const option = document.createElement("option");
     option.value = idx;
-    option.textContent = `${emp.name} ($${emp.wage.toFixed(2)})`;
+    option.textContent = emp.name;
     select.appendChild(option);
   });
 }
@@ -47,18 +45,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("add-employee-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    const name = document.getElementById("newEmployeeName").value.trim();
+    const name = document.getElementById("newEmployeeName").value;
     const wage = parseFloat(document.getElementById("newEmployeeWage").value);
-
-    if (!name) {
-      alert("Please enter a name.");
-      return;
-    }
     if (isNaN(wage) || wage <= 0) {
       alert("Please enter a valid hourly wage.");
       return;
     }
-
     const employees = loadEmployees();
     employees.push({ name, wage, ytdGross: 0, ytdCpp: 0, ytdEi: 0 });
     saveEmployees(employees);
@@ -70,83 +62,65 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const employees = loadEmployees();
     const idx = parseInt(document.getElementById("employeeSelect").value);
-
-    if (isNaN(idx)) {
-      alert("Please select an employee.");
-      return;
-    }
-
     const emp = employees[idx];
+
     const hours = parseFloat(document.getElementById("hours").value);
     const tips = parseFloat(document.getElementById("tips").value) || 0;
     const commission = parseFloat(document.getElementById("commission").value) || 0;
     const period = document.getElementById("period").value;
-    const payDate = document.getElementById("payDate").value;
-
-    if (!payDate) {
-      alert("Please enter a valid pay date.");
-      return;
-    }
-    if (isNaN(hours) || hours < 0) {
-      alert("Please enter valid hours worked.");
-      return;
-    }
-    if (!period.trim()) {
-      alert("Please enter the pay period.");
-      return;
-    }
 
     const basePay = hours * emp.wage;
     const grossPay = basePay + tips + commission;
+    const annualGross = emp.ytdGross + grossPay;
+
+    const round2 = (n) => Math.round(n * 100) / 100;
 
     // CPP calculation
-    const cppExemptPerPeriod = CPP_BASIC_EXEMPTION / payPeriodsPerYear;
-    let pensionableEarningsThisPeriod = Math.max(0, basePay - cppExemptPerPeriod);
-
-    const maxCppContribution = (CPP_ANNUAL_MAX - CPP_BASIC_EXEMPTION) * CPP_RATE;
-    let cpp = pensionableEarningsThisPeriod * CPP_RATE;
-    if (emp.ytdCpp + cpp > maxCppContribution) {
-      cpp = Math.max(0, maxCppContribution - emp.ytdCpp);
-    }
+    let cppExemptPerPeriod = CPP_BASIC_EXEMPTION / payPeriodsPerYear;
+    let cppPensionable = Math.max(0, basePay - cppExemptPerPeriod);
+    let cpp = Math.min(cppPensionable, CPP_ANNUAL_MAX - emp.ytdGross) * CPP_RATE;
+    const maxCpp = (CPP_ANNUAL_MAX - CPP_BASIC_EXEMPTION) * CPP_RATE;
+    if (emp.ytdCpp + cpp > maxCpp) cpp = maxCpp - emp.ytdCpp;
+    cpp = round2(Math.max(0, cpp));
 
     // EI calculation
-    const eiInsurableEarningsLeft = Math.max(0, EI_ANNUAL_MAX - emp.ytdGross);
-    const eiInsurable = Math.min(basePay, eiInsurableEarningsLeft);
+    let eiInsurable = Math.min(basePay, EI_ANNUAL_MAX - emp.ytdGross);
     let ei = eiInsurable * EI_RATE;
-    const maxEiContribution = EI_ANNUAL_MAX * EI_RATE;
-    if (emp.ytdEi + ei > maxEiContribution) {
-      ei = Math.max(0, maxEiContribution - emp.ytdEi);
-    }
+    const maxEi = EI_ANNUAL_MAX * EI_RATE;
+    if (emp.ytdEi + ei > maxEi) ei = maxEi - emp.ytdEi;
+    ei = round2(Math.max(0, ei));
 
-    // Taxable income for income tax = base pay - CPP - EI
-    const taxableIncome = basePay - cpp - ei;
-    const annualizedTaxableIncome = taxableIncome * payPeriodsPerYear;
+    let taxableIncome = basePay - cpp - ei;
+    let annualizedTaxable = taxableIncome * payPeriodsPerYear;
 
-    // Federal & provincial tax minus basic credits
-    let fedTaxAnnual = federalTaxAnnual(annualizedTaxableIncome) - (TD1_FEDERAL * 0.15);
-    let ontTaxAnnual = ontarioTaxAnnual(annualizedTaxableIncome) - (TD1_ONTARIO * 0.0505);
-
+    // Federal Tax
+    let fedTaxAnnual = federalTaxAnnual(annualizedTaxable);
+    const fedCredit = Math.min(annualizedTaxable, TD1_FEDERAL) * 0.15;
+    fedTaxAnnual -= fedCredit;
     fedTaxAnnual = Math.max(0, fedTaxAnnual);
+    const fedTax = round2(fedTaxAnnual / payPeriodsPerYear);
+
+    // Ontario Tax
+    let ontTaxAnnual = ontarioTaxAnnual(annualizedTaxable);
+    const ontCredit = Math.min(annualizedTaxable, TD1_ONTARIO) * 0.0505;
+    ontTaxAnnual -= ontCredit;
     ontTaxAnnual = Math.max(0, ontTaxAnnual);
+    const ontTax = round2(ontTaxAnnual / payPeriodsPerYear);
 
-    const fedTax = fedTaxAnnual / payPeriodsPerYear;
-    const ontTax = ontTaxAnnual / payPeriodsPerYear;
+    const totalDeductions = round2(fedTax + ontTax + cpp + ei);
+    const netPay = round2(grossPay - totalDeductions);
 
-    // Total deductions & net pay
-    const totalDeductions = fedTax + ontTax + cpp + ei;
-    const netPay = grossPay - totalDeductions;
-
-    // Update YTD values and save
+    // Update employee YTDs
     emp.ytdGross += grossPay;
     emp.ytdCpp += cpp;
     emp.ytdEi += ei;
     saveEmployees(employees);
 
-    // Render pay stub
+    // Render Pay Stub
     document.getElementById("result").classList.remove("hidden");
     document.getElementById("paystub").innerHTML = `
       <p><strong>Company:</strong> SugaWax Zone</p>
-      <p><strong>Pay Date:</strong> ${new Date(payDate).toLocaleDateString()}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
       <p><strong>Name:</strong> ${emp.name}</p>
       <p><strong>Pay Period:</strong> ${period}</p>
       <p><strong>Hours Worked:</strong> ${hours}</p>
@@ -163,7 +137,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <hr>
       <p class="text-xl font-bold"><strong>Net Pay:</strong> $${netPay.toFixed(2)}</p>
     `;
-
     e.target.reset();
   });
 });
