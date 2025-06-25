@@ -1,114 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SugaWax Zone Payroll</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-violet-50 min-h-screen flex flex-col items-center p-6">
-  <header class="mb-8">
-    <h1 class="text-3xl font-bold text-violet-700">SugaWax Zone Payroll Calculator</h1>
-  </header>
+<html>
+  <head>
+    <base target="_top">
+    <script>
+      function handleSubmit(event) {
+        event.preventDefault();
+        const form = document.getElementById("payroll-form");
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.hoursWorked = parseFloat(data.hoursWorked);
+        data.hourlyRate = parseFloat(data.hourlyRate);
+        google.script.run
+          .withSuccessHandler(() => alert("Paystub sent and recorded!"))
+          .submitPayroll(data);
+      }
+    </script>
+    <style>
+      body {
+        font-family: Arial;
+        background-color: #f5f5f5;
+        padding: 2rem;
+      }
+      .form-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 500px;
+        margin: auto;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <form id="payroll-form" onsubmit="handleSubmit(event)">
+        <h2>Payroll Form</h2>
+        <label>Employee</label><br>
+        <select name="employee" required>
+          <option value="Amya Mazza">Amya Mazza</option>
+          <option value="Jaya Kaur">Jaya Kaur</option>
+        </select><br><br>
 
-  <!-- Add Employee -->
-  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
-    <h2 class="text-xl font-semibold mb-4 text-violet-600">Add New Employee</h2>
-    <form id="add-employee-form" class="space-y-4">
-      <input
-        id="newEmployeeName"
-        type="text"
-        placeholder="Employee Name"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      />
-      <input
-        id="newEmployeeWage"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Hourly Wage ($)"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      />
-      <button
-        type="submit"
-        class="w-full bg-violet-700 hover:bg-violet-800 text-white py-2 rounded transition"
-      >
-        Add Employee
-      </button>
-    </form>
-  </section>
+        <label>Pay Period</label><br>
+        <input type="text" name="payPeriod" required><br><br>
 
-  <!-- Payroll Form -->
-  <section class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
-    <h2 class="text-xl font-semibold mb-4 text-violet-600">Process Payroll</h2>
-    <form id="payroll-form" class="space-y-4">
-      <select
-        id="employeeSelect"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      >
-        <option value="">Select Employee</option>
-      </select>
+        <label>Hours Worked</label><br>
+        <input type="number" name="hoursWorked" required><br><br>
 
-      <label class="block text-violet-700 font-semibold" for="payDate">Pay Date</label>
-      <input
-        id="payDate"
-        type="date"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      />
+        <label>Hourly Rate</label><br>
+        <input type="number" name="hourlyRate" required><br><br>
 
-      <input
-        id="period"
-        type="text"
-        placeholder="Pay Period (e.g. June 01 - June 14)"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      />
+        <label>Deductions</label><br>
+        <input type="number" name="deductions"><br><br>
 
-      <input
-        id="hours"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Hours Worked"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-        required
-      />
-      <input
-        id="tips"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Tips (optional)"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-      />
-      <input
-        id="commission"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Commission (optional)"
-        class="w-full p-2 border border-violet-300 rounded focus:outline-none focus:ring-2 focus:ring-violet-400"
-      />
+        <label>Notes</label><br>
+        <textarea name="notes"></textarea><br><br>
 
-      <button
-        type="submit"
-        class="w-full bg-violet-700 hover:bg-violet-800 text-white py-2 rounded transition"
-      >
-        Calculate Payroll
-      </button>
-    </form>
-  </section>
-
-  <!-- Result -->
-  <section id="result" class="bg-white p-6 rounded-lg shadow-md w-full max-w-md hidden">
-    <h2 class="text-xl font-semibold mb-4 text-violet-600">Pay Stub</h2>
-    <div id="paystub" class="text-violet-900 space-y-1"></div>
-  </section>
-
-  <script src="script.js"></script>
-</body>
+        <button type="submit">Generate Paystub</button>
+      </form>
+    </div>
+  </body>
 </html>
